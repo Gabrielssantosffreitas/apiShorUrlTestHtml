@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Links</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #0056b3;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output-container {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerenciador de Links</h1>
+
+        <div class="section">
+            <h2>Rotas de Consulta (GET)</h2>
+            <p>Clique nos botões abaixo para obter dados das respectivas rotas.</p>
+            <div class="button-group">
+                <button onclick="fetchData('/all')">/all</button>
+                <button onclick="fetchData('/gruopByUrl')">/gruopByUrl</button>
+                <button onclick="fetchData('/orderByDate')">/orderByDate</button>
+                <button onclick="fetchData('/orderByClick')">/orderByClick</button>
+                <button onclick="fetchData('/groupByDateCountLink')">/groupByDateCountLink</button>
+                <button onclick="fetchData('/groupByState')">/groupByState</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Rota de Criação (POST)</h2>
+            <p>Preencha o formulário para criar um novo link.</p>
+            <form id="createLinkForm" onsubmit="handlePost(event)">
+                <div class="form-row">
+                    <input type="text" id="urlInput" placeholder="URL completa" required>
+                    <input type="text" id="shortUrlInput" placeholder="URL encurtada" required>
+                </div>
+                <input type="number" id="ativadoDesativadoInput" placeholder="Estado (0 para ATIVO)" required>
+                <button type="submit">Criar Link</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>Resposta da API</h2>
+            <div id="output" class="output-container">
+                <p>O resultado da sua requisição será exibido aqui.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8080';
+
+        const displayJson = (data) => {
+            const outputDiv = document.getElementById('output');
+            const formattedJson = JSON.stringify(data, null, 2);
+            outputDiv.innerHTML = `<pre>${formattedJson}</pre>`;
+        };
+
+        const displayError = (error) => {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = `<p style="color: red;">Erro: ${error.message || error}</p>`;
+        };
+
+        async function fetchData(path) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '<p class="loading">Carregando...</p>';
+            
+            try {
+                const response = await fetch(`${BASE_URL}${path}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                displayJson(data);
+            } catch (error) {
+                console.error('Erro:', error);
+                displayError(error);
+            }
+        }
+
+        async function handlePost(event) {
+            event.preventDefault();
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '<p class="loading">Enviando dados...</p>';
+
+            const url = document.getElementById('urlInput').value;
+            const shortUrl = document.getElementById('shortUrlInput').value;
+            const ativadoDesativado = parseInt(document.getElementById('ativadoDesativadoInput').value);
+
+            const requestBody = {
+                url,
+                shortUrl,
+                AtivadoDesativado: ativadoDesativado
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/created`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erro na criação: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                displayJson(data);
+            } catch (error) {
+                console.error('Erro:', error);
+                displayError(error);
+            }
+        }
+    </script>
+</body>
+</html>
